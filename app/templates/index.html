@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link rel="stylesheet" href="/static/styles/index.css">
+</head>
+
+<body>
+    <div class="container">
+        <div id="quiz" class="question">
+            <h1>Іспит з ПДР</h1>
+            <div id="question-number-timer" class="question-number-timer">
+                <div id="question-number" class="question-number"></div>
+                <div id="timer" class="timer"></div>
+            </div>
+            <div id="question-container" class="question"></div>
+            <div class="button-container">
+                <button id="next-btn" disabled>Наступне запитання</button>
+            </div>
+        </div>
+        <div id="results" class="results" style="display: none;">
+            <h2>Іспит пройдено</h2>
+            <p id="score"></p>
+            <div class="gif-container">
+                <img src="/static/car.gif" alt="Celebration GIF">
+            </div>
+            <button id="restart-btn">Пройти ще раз</button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questions = [];
+        let timer;
+        let elapsedTime = 0; // Elapsed time in seconds
+
+        // Select DOM elements
+        const questionNumberContainer = document.getElementById('question-number');
+        const timerContainer = document.getElementById('timer');
+        const questionContainer = document.getElementById('question-container');
+        const nextButton = document.getElementById('next-btn');
+        const resultsContainer = document.getElementById('results');
+        const scoreContainer = document.getElementById('score');
+        const restartButton = document.getElementById('restart-btn');
+
+        // Fetch questions from the server
+        async function fetchQuestions() {
+            try {
+                const response = await fetch('/api/questions'); // Use a relative URL
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                questions = data;
+                console.log('Fetched questions:', questions); // Debugging information
+                renderQuestion();
+                startTimer();
+            } catch (error) {
+                console.error('Failed to fetch questions:', error);
+            }
+        }
+
+        // Render question
+        function renderQuestion() {
+            const question = questions[currentQuestionIndex];
+            let imgTag = '';
+            if (question.img_src) {
+                imgTag = `<img src="/static/images/${question.img_src}" alt="Question Image">`;
+            }
+            questionContainer.innerHTML = `
+        <h2>${question.title}</h2>
+        ${imgTag}
+        <ul class="answers">
+          ${question.answers
+                    .map(
+                        (answer, index) => `
+                <li data-correct="${answer[1]}">
+                  ${answer[0]}
+                </li>
+              `
+                    )
+                    .join('')}
+        </ul>
+      `;
+            questionNumberContainer.innerHTML = `Запитання ${currentQuestionIndex + 1} з ${questions.length}`;
+            nextButton.disabled = true;
+            window.scrollTo(0, 0); // Scroll to the top of the page
+        }
+
+        // Start timer
+        function startTimer() {
+            updateTimer();
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        // Update timer
+        function updateTimer() {
+            elapsedTime++;
+            const minutes = Math.floor(elapsedTime / 60);
+            const seconds = elapsedTime % 60;
+            timerContainer.innerHTML = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // Handle answer selection
+        questionContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const selectedAnswer = e.target;
+                const isCorrect = selectedAnswer.getAttribute('data-correct') === '1';
+                nextButton.disabled = false;
+
+                const answers = questionContainer.querySelectorAll('.answers li');
+                answers.forEach((answer) => {
+                    answer.classList.remove('correct', 'wrong');
+                    answer.style.pointerEvents = 'none'; // Disable further clicks
+                });
+
+                if (isCorrect) {
+                    selectedAnswer.classList.add('correct');
+                    score++;
+                } else {
+                    selectedAnswer.classList.add('wrong');
+                }
+
+                // Highlight the correct answer if the user's selection is wrong
+                answers.forEach((answer) => {
+                    if (answer.getAttribute('data-correct') === '1') {
+                        answer.classList.add('correct');
+                    }
+                });
+            }
+        });
+
+        // Handle "Next Question" button click
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < questions.length) {
+                renderQuestion();
+            } else {
+                clearInterval(timer); // Stop the timer when the quiz is completed
+                showResults();
+            }
+        });
+
+        // Show results
+        function showResults() {
+            document.getElementById('quiz').style.display = 'none';
+            resultsContainer.style.display = 'block';
+            scoreContainer.innerHTML = `Ви відповіли на <strong>${score}</strong> з <strong>${questions.length}</strong> запитань правильно.`;
+        }
+
+        // Restart quiz
+        restartButton.addEventListener('click', () => {
+            window.location.href = '/quiz'; // Redirect to the quiz page
+        });
+
+        // Initialize quiz
+        fetchQuestions();
+    </script>
+</body>
+
+</html>

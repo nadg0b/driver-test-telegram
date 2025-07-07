@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and local data
+*.log
+*.sqlite3
+*.db
+*.db-journal
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Environment / config files
+.env
+*.env
+*.ini
+*.cfg
+*.local
+
+# Pytest / coverage
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache/
+.pytest_cache/
+
+# Local config (don't commit secrets)
+app/core/config.py
